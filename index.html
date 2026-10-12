@@ -398,6 +398,7 @@ CLASSES.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.text
 document.getElementById('g-go').onclick = ()=>{
   const no = document.getElementById('g-no').value.trim(), name = document.getElementById('g-name').value.trim();
   if(!no||!name){ toast('번호와 이름을 적어 주세요'); return; }
+  if(!/^\d{1,2}$/.test(no)||+no<1||+no>40){ toast('번호는 출석번호만 적어요 (예: 7)'); return; }
   me = {cls:gCls.value, no, name}; saveMe(); start();
 };
 document.getElementById('change').onclick = ()=>{ document.getElementById('main').hidden=true; document.getElementById('gate').hidden=false;
