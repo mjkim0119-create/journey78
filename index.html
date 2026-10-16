@@ -47,7 +47,10 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
 .wrap{max-width:900px;margin:0 auto;padding:12px 12px 40px}
 .top{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:var(--paper);border-radius:14px;padding:10px 14px;margin-bottom:10px}
 .top .me{font-family:var(--f-d);font-size:20px}
-#merit-open{border-color:var(--gold);color:var(--gold);font-weight:700}
+#merit-open{cursor:pointer}
+#merit-open rect{fill:transparent;stroke:var(--gold);stroke-width:2.5}
+#merit-open text{fill:var(--gold)!important;font-family:var(--f-d);font-size:22px;text-anchor:middle}
+#merit-open:hover rect{fill:rgba(227,187,76,.12)}
 .top .msg{flex:1 1 220px;font-size:15px;color:var(--muted)}
 .top .msg b{color:var(--here)}
 .card{background:var(--paper);border-radius:14px;overflow:hidden}
@@ -122,7 +125,6 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
   <div class="top">
     <span class="me" id="me"></span>
     <span class="msg" id="msg">불러오는 중이에요</span>
-    <button class="btn ghost" id="merit-open">상점 요청</button>
     <button class="btn ghost" id="change">나 바꾸기</button>
   </div>
   <div class="card"><style>
@@ -542,6 +544,10 @@ async function sendPart(b){
 }
 
 // ---------- 상점 요청 ----------
+(()=>{ const svg=document.querySelector('svg.map'); if(!svg) return; const NS='http://www.w3.org/2000/svg';
+  const g=document.createElementNS(NS,'g'); g.setAttribute('id','merit-open'); g.setAttribute('role','button'); g.setAttribute('tabindex','0'); g.setAttribute('aria-label','상점 요청');
+  g.innerHTML='<rect x="842" y="44" width="124" height="72" rx="16"/><text x="904" y="78">상점</text><text x="904" y="104">요청</text>';
+  svg.appendChild(g); })();
 const mdim=document.getElementById('mdim');
 function todayISO(){ const d=new Date(); const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); }
 function drawMerits(list){ const el=document.getElementById('m-list'); if(!list||!list.length){ el.innerHTML=''; return; }
