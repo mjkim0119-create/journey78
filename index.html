@@ -94,6 +94,15 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
 .mitem{border-top:1px solid var(--line);padding:8px 0;font-size:14px}
 .mitem .st{float:right;font-size:13px;color:var(--muted)}
 .mitem .st.ok{color:var(--here)}
+.bcards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bcard{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.bcard .v{font-family:var(--f-d);font-size:26px;color:var(--ink)}
+.bcard .l{font-size:13px;color:var(--muted)}
+.bcard .d{font-size:13px;margin-top:2px}
+.up{color:var(--here)}.dn{color:var(--stamp)}
+.bnote{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:15px;line-height:1.6}
+.bchart{width:100%;height:auto;display:block}
+.bwrong li{font-size:14px;margin:3px 0;color:var(--ink)}
 .fill{flex:none;white-space:nowrap;border:1px solid var(--here);color:var(--here);background:transparent;border-radius:999px;padding:5px 12px;font-size:14px;cursor:pointer;font-family:inherit}
 </style></head>
 <body>
@@ -380,6 +389,14 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
   <div class="merit-bar"><button class="btn ghost" id="merit-open">상점 요청하기</button></div>
 </div>
 
+<div id="bdim" class="dim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="b-title">
+    <h2 id="b-title">블루킷 리포트</h2>
+    <div id="b-body"></div>
+    <div class="acts"><button class="btn ghost" id="b-close">닫기</button></div>
+  </div>
+</div>
+
 <div id="mdim" class="dim" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="m-title">
     <h2 id="m-title">상점 요청하기</h2>
@@ -462,10 +479,12 @@ function render(pop){
   const msg=document.getElementById('msg');
   if(!best){ msg.innerHTML='첫 수업 날 출발해요'; travelTo(0); }
   else { const q=QUESTIONS[best]; msg.innerHTML='지금 위치: <b>'+esc(q.name)+'</b> ('+firstDate(c,best)+')'+(answered(best)?' 도장 완료':' 도장 받을 차례'); travelTo(STOPLEN[mapId(best)]); }
-  try{ const f=JSON.parse(localStorage.getItem('u78-forms')||'{}'); document.querySelectorAll('.form').forEach(x=>x.classList.toggle('on',!!f['f'+x.dataset.f])); document.querySelectorAll('.blk').forEach(x=>x.classList.toggle('on',!!f['b'+x.dataset.b])); }catch(e){}
+  document.querySelectorAll('.blk').forEach(x=>x.classList.toggle('on',!!blkOf(+x.dataset.b+1)));
+  try{ const f=JSON.parse(localStorage.getItem('u78-forms')||'{}'); document.querySelectorAll('.form').forEach(x=>x.classList.toggle('on',!!f['f'+x.dataset.f])); }catch(e){}
 }
 
-document.querySelectorAll('.form,.blk').forEach(x=>x.addEventListener('click',()=>{ try{ const f=JSON.parse(localStorage.getItem('u78-forms')||'{}'); const k=x.classList.contains('form')?'f'+x.dataset.f:'b'+x.dataset.b; f[k]=f[k]?0:1; localStorage.setItem('u78-forms',JSON.stringify(f)); }catch(e){} render(); }));
+document.querySelectorAll('.blk').forEach(x=>x.addEventListener('click',()=>openBlk(+x.dataset.b+1)));
+document.querySelectorAll('.form').forEach(x=>x.addEventListener('click',()=>{ try{ const f=JSON.parse(localStorage.getItem('u78-forms')||'{}'); const k='f'+x.dataset.f; f[k]=f[k]?0:1; localStorage.setItem('u78-forms',JSON.stringify(f)); }catch(e){} render(); }));
 
 document.querySelectorAll('.st').forEach(g=>{
   const act=()=>{ const id=g.dataset.id; if(id==='goal'){ toast('12/30 동화울축제에서 만나요'); return; }
@@ -537,6 +556,42 @@ document.getElementById('m-send').onclick=async()=>{ const b=document.getElement
   catch(e){ toast('보내지 못했어요. 잠시 뒤 다시 눌러 주세요'); }
   b.disabled=false; b.textContent='요청 보내기'; };
 
+// ---------- 블루킷 리포트 ----------
+let myBlk=[];
+function blkOf(n){ return myBlk.find(r=>r.n===n); }
+const bdim=document.getElementById('bdim');
+document.getElementById('b-close').onclick=()=>{ bdim.hidden=true; };
+bdim.addEventListener('click',e=>{ if(e.target===bdim) bdim.hidden=true; });
+function dl(v,unit){ if(v==null||isNaN(v)) return ''; const r=Math.round(v*10)/10; return r>0?'<span class="up">+'+r+unit+'</span>':(r<0?'<span class="dn">'+r+unit+'</span>':'<span>그대로</span>'); }
+function blkChart(n){
+  const W=640,H=230,L=40,R=16,T=18,B=34; const xs=myBlk.map(r=>r.n); const N=Math.max(...xs,2);
+  const X=i=>L+(N<=1?0:(i-1)*(W-L-R)/(N-1)); const Y=v=>T+(100-v)*(H-T-B)/100*1.6-((100-v)>62?0:0);
+  const y=v=>Math.max(T,Math.min(H-B, T+(100-Math.max(40,v))*(H-T-B)/60));
+  let g='';
+  [40,60,80,100].forEach(v=>{ g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="var(--muted)">'+v+'%</text>'; });
+  for(let i=1;i<=N;i++) g+='<text x="'+X(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="12" fill="'+(i===n?'var(--ink)':'var(--muted)')+'">'+i+'회</text>';
+  const path=(k,c,dash)=>{ const pts=myBlk.filter(r=>r[k]>0).map(r=>X(r.n)+','+y(r[k])); return pts.length?'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="3" '+(dash?'stroke-dasharray="6 5"':'')+'/>':''; };
+  g+=path('cAcc','var(--muted)',true)+path('acc','var(--here)',false);
+  myBlk.forEach(r=>{ g+='<circle cx="'+X(r.n)+'" cy="'+y(r.acc)+'" r="'+(r.n===n?7:5)+'" fill="var(--here)"/>'; if(r.n===n) g+='<text x="'+X(r.n)+'" y="'+(y(r.acc)-12)+'" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">'+r.acc+'%</text>'; });
+  return '<svg class="bchart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="회차별 정답률">'+g+'</svg><div style="font-size:13px;color:var(--muted);text-align:center">초록 실선 = 나의 정답률, 회색 점선 = 우리 반 평균</div>';
+}
+function openBlk(n){
+  const r=blkOf(n);
+  if(!r){ toast(myBlk.length?'블루킷 '+n+'회차 기록이 아직 없어요':'아직 블루킷 기록이 없어요. 블루킷 닉네임을 학번+이름으로 해 주세요'); return; }
+  const first=myBlk[0], prev=myBlk.filter(x=>x.n<n).pop();
+  document.getElementById('b-title').textContent='블루킷 '+n+'회차 ('+r.unit+' 어휘, '+r.date+')';
+  const card=(v,unit,l,cv,pv)=>'<div class="bcard"><div class="v">'+v+unit+'</div><div class="l">'+l+'</div><div class="d">'+(cv!==''&&cv!=null?'반 평균 '+cv+unit:'')+'</div>'+(pv!=null?'<div class="d">지난번보다 '+dl(v-pv,unit==='%'?'%p':unit)+'</div>':'')+'</div>';
+  let tip='';
+  if(prev){ const da=r.acc-prev.acc, dn=r.ans-prev.ans;
+    tip = da>=0&&dn>=0 ? '지난번보다 더 많이 풀면서 더 정확해졌어요.' : da>=0 ? '푼 문항은 줄었지만 더 정확해졌어요. 다음엔 조금 더 빠르게 도전해 봐요.' : dn>=0 ? '더 많이 풀었어요. 아래 다시 볼 문항으로 정확도를 올려 봐요.' : '이번엔 조금 주춤했어요. 다시 볼 문항부터 확인해 봐요.'; }
+  else tip='첫 기록이에요. 다음 회차와 비교해 성장을 확인해 봐요.';
+  if(first && n>first.n) tip+=' 처음('+first.n+'회차)보다 정답률 '+dl(r.acc-first.acc,'%p')+', 푼 문항 '+dl(r.ans-first.ans,'개')+'.';
+  document.getElementById('b-body').innerHTML='<div class="bcards">'+card(r.acc,'%','정답률',r.cAcc,prev?prev.acc:null)+card(r.ans,'개','푼 문항',r.cAns,prev?prev.ans:null)+card(r.cor,'개','맞은 개수','',prev?prev.cor:null)+'</div>'+
+    '<div class="bnote">'+tip+'</div>'+blkChart(n)+
+    (r.wrong.length?'<div class="q" style="margin-top:4px">다시 볼 문항 ('+r.wrong.length+')</div><ol class="bwrong">'+r.wrong.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ol>':'<div class="bnote">이번 회차에 틀린 문항이 없어요!</div>');
+  bdim.hidden=false;
+}
+
 async function start(){
   document.getElementById('gate').hidden=true; document.getElementById('main').hidden=false;
   document.getElementById('me').textContent=me.cls+'반 '+me.no+'번 '+me.name;
@@ -544,6 +599,7 @@ async function start(){
   const ff=document.querySelectorAll('.t-field'); if(ff.length>=2){ ff[0].textContent='2학년 '+String(me.cls).split('-').pop()+'반 '+me.no+'번'; ff[1].textContent='이름 '+me.name; }
   await checkTester();
   render();
+  call('getMyBlooket',me.cls,me.no,me.name).then(b=>{ myBlk=b||[]; render(); }).catch(()=>{});
   try{ mine=await call('getMine',me.cls,me.no,me.name); render(); }catch(e){ document.getElementById('msg').textContent='기록을 불러오지 못했어요. 새로고침해 주세요'; }
   // QR이나 링크에 ?st=s71 처럼 역이 붙어 있으면 지도에서 그 도장 칸을 깜빡여 누르게 한다
   if(PARAMS.st && QUESTIONS[PARAMS.st] && !openedFromLink){ openedFromLink=true; const g=document.querySelector('.st[data-id="'+mapId(PARAMS.st)+'"]');
