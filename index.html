@@ -85,7 +85,9 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
 .part h3{font-size:18px}
 .part .ok{font-size:13px;color:var(--here);font-family:var(--f-ui)}
 .part.stamp-part{border-color:var(--stamp);background:#2a1c22}
-.frame{font-size:14px;color:var(--muted);background:var(--bg);border-radius:8px;padding:6px 10px}
+.frame{font-size:14px;color:var(--muted);background:var(--bg);border-radius:8px;padding:6px 10px;display:flex;gap:8px;align-items:center}
+.frame>span{flex:1}
+.fill{flex:none;white-space:nowrap;border:1px solid var(--here);color:var(--here);background:transparent;border-radius:999px;padding:5px 12px;font-size:14px;cursor:pointer;font-family:inherit}
 </style></head>
 <body>
 <div id="boot" style="max-width:420px;margin:60px auto;padding:22px;border-radius:18px;background:#1b2130;color:#e6e9f0;text-align:center;font-size:17px;line-height:1.6">여행 지도를 불러오는 중이에요<br><small style="color:#a3acbb">잠시만 기다려 주세요</small></div>
@@ -462,7 +464,7 @@ function openSheet(st){
   if(q.recall){ const items=q.recall.map(r=>{ const rq=QUESTIONS[r], rm=mine[r]||{}; const a=stampIdx(rq).map(i=>rm[i]).filter(Boolean).join('\n'); return '<div><b>'+esc(rq.name)+'</b><div class="a">'+(a?esc(a):'<span style="color:var(--muted)">아직 쓰지 않았어요</span>')+'</div></div>'; }).join('');
     rc.innerHTML='<div class="recall"><div style="color:var(--muted)">지난 역에서 내가 쓴 답</div>'+items+'</div>'; }
   const parts=q.parts||[{key:'_',name:'',stamp:true}];
-  const box=(p,i)=>'<label style="display:grid;gap:6px"><span class="q'+(p.key?' key':'')+'">'+esc(p.q)+'<span class="lang '+p.lang+'">'+LANG[p.lang]+'</span></span>'+(p.frame?'<span class="frame">'+esc(p.frame)+'</span>':'')+'<textarea data-i="'+i+'" maxlength="1000">'+esc(m[i]||'')+'</textarea></label>';
+  const box=(p,i)=>'<label style="display:grid;gap:6px"><span class="q'+(p.key?' key':'')+'">'+esc(p.q)+'<span class="lang '+p.lang+'">'+LANG[p.lang]+'</span></span>'+(p.frame?'<span class="frame"><span>'+esc(p.frame)+'</span><button type="button" class="fill" data-i="'+i+'">틀 넣기</button></span>':'')+'<textarea data-i="'+i+'" maxlength="1000">'+esc(m[i]||'')+'</textarea></label>';
   document.getElementById('s-qs').innerHTML=parts.map(pt=>{
     const idx=q.prompts.map((p,i)=>i).filter(i=>(q.prompts[i].part||'_')===pt.key);
     const done=idx.every(i=>(m[i]||'').trim());
@@ -471,6 +473,9 @@ function openSheet(st){
       '<div class="acts"><button class="btn'+(pt.stamp?'':' ghost')+' send" data-part="'+pt.key+'">'+(pt.stamp?'제출하고 도장 받기':(done?'고쳐서 다시 보내기':'보내기'))+'</button></div></section>';
   }).join('');
   dim.querySelectorAll('.send').forEach(b=>b.onclick=()=>sendPart(b));
+  // 틀 넣기: 문장 틀을 답 칸에 넣고 첫 빈칸(___)을 골라 둔다. 학생은 빈칸만 바꿔 쓰면 된다
+  dim.querySelectorAll('.fill').forEach(b=>b.onclick=e=>{ e.preventDefault(); const i=+b.dataset.i, ta=dim.querySelector('textarea[data-i="'+i+'"]'); const fr=q.prompts[i].frame;
+    ta.value = ta.value.trim() ? ta.value.replace(/\s*$/,'')+'\n'+fr : fr; ta.focus(); const k=ta.value.indexOf('___'); if(k>=0) ta.setSelectionRange(k,k+3); });
   dim.hidden=false; const first=[...dim.querySelectorAll('textarea')].find(t=>!t.value.trim()); setTimeout(()=>{ if(first) first.focus(); },50);
 }
 document.getElementById('s-close').onclick=()=>{ dim.hidden=true; };
@@ -480,6 +485,7 @@ async function sendPart(b){
   const tas=b.dataset.one!=null?[sec.querySelector('textarea[data-i="'+b.dataset.one+'"]')]:[...sec.querySelectorAll('textarea')];
   const answers=tas.map(t=>({i:+t.dataset.i, q:q.prompts[+t.dataset.i].q, a:t.value.trim(), key:!!q.prompts[+t.dataset.i].key}));
   if(answers.some(a=>!a.a)){ toast('이 부분의 모든 칸에 답을 써 주세요'); return; }
+  if(answers.some(a=>/_{2,}/.test(a.a))){ toast('빈칸(___)을 모두 채워 주세요'); const t=tas.find(t=>/_{2,}/.test(t.value)); if(t){ t.focus(); const k=t.value.search(/_{2,}/); t.setSelectionRange(k,k+t.value.slice(k).match(/^_+/)[0].length); } return; }
   const label=b.textContent; b.disabled=true; b.textContent='보내는 중';
   const payload={cls:me.cls,no:me.no,name:me.name,st:curSt,stName:q.name,answers,dev:devId()};
   // 한꺼번에 몰려서 실패하면 잠깐 기다렸다가 한 번 더 보낸다
