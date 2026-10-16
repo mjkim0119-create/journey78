@@ -602,6 +602,11 @@ async function start(){
   await checkTester();
   render();
   call('getMyBlooket',me.cls,me.no,me.name).then(b=>{ myBlk=b||[]; render(); }).catch(()=>{});
+  // 수업 중 블루킷을 반영하면 30초 안에 새 회차가 들어온다(화면을 보고 있을 때만 확인)
+  if(!window._blkPoll) window._blkPoll=setInterval(async()=>{ if(document.hidden||!me) return;
+    try{ const b=await call('getMyBlooket',me.cls,me.no,me.name)||[]; if(b.length>myBlk.length){ myBlk=b; render(); const nr=b[b.length-1];
+      document.querySelectorAll('.blk').forEach(x=>{ if(+x.dataset.b+1===nr.n){ x.classList.add('call'); setTimeout(()=>x.classList.remove('call'),8000); } });
+      toast('새 블루킷 기록이 왔어요! '+nr.n+'번 칸을 눌러 보세요'); } else if(b.length===myBlk.length && b.length && JSON.stringify(b)!==JSON.stringify(myBlk)){ myBlk=b; render(); } }catch(e){} },30000);
   try{ mine=await call('getMine',me.cls,me.no,me.name); render(); }catch(e){ document.getElementById('msg').textContent='기록을 불러오지 못했어요. 새로고침해 주세요'; }
   // QR이나 링크에 ?st=s71 처럼 역이 붙어 있으면 지도에서 그 도장 칸을 깜빡여 누르게 한다
   if(PARAMS.st && QUESTIONS[PARAMS.st] && !openedFromLink){ openedFromLink=true; const g=document.querySelector('.st[data-id="'+mapId(PARAMS.st)+'"]');
