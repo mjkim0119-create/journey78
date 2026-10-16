@@ -511,7 +511,7 @@ function openSheet(st){
   if(q.recall){ const items=q.recall.map(r=>{ const rq=QUESTIONS[r], rm=mine[r]||{}; const a=stampIdx(rq).map(i=>rm[i]).filter(Boolean).join('\n'); return '<div><b>'+esc(rq.name)+'</b><div class="a">'+(a?esc(a):'<span style="color:var(--muted)">아직 쓰지 않았어요</span>')+'</div></div>'; }).join('');
     rc.innerHTML='<div class="recall"><div style="color:var(--muted)">지난 역에서 내가 쓴 답</div>'+items+'</div>'; }
   const parts=q.parts||[{key:'_',name:'',stamp:true}];
-  const box=(p,i)=>'<label style="display:grid;gap:6px"><span class="q'+(p.key?' key':'')+'">'+esc(p.q)+'<span class="lang '+p.lang+'">'+LANG[p.lang]+'</span></span>'+(p.frame?'<span class="frame"><span>'+esc(p.frame)+'</span><button type="button" class="fill" data-i="'+i+'">틀 넣기</button></span>':'')+'<textarea data-i="'+i+'" maxlength="1000">'+esc(m[i]||'')+'</textarea></label>';
+  const box=(p,i)=>'<label style="display:grid;gap:6px"><span class="q'+(p.key?' key':'')+'">'+esc(p.q)+'<span class="lang '+p.lang+'">'+LANG[p.lang]+'</span></span>'+(p.frame?'<span class="frame"><span>'+esc(p.frame)+'</span><button type="button" class="fill" data-i="'+i+'">복사</button></span>':'')+'<textarea data-i="'+i+'" maxlength="1000">'+esc(m[i]||'')+'</textarea></label>';
   document.getElementById('s-qs').innerHTML=parts.map(pt=>{
     const idx=q.prompts.map((p,i)=>i).filter(i=>(q.prompts[i].part||'_')===pt.key);
     const done=idx.every(i=>(m[i]||'').trim());
