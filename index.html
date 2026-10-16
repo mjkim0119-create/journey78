@@ -401,7 +401,7 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="m-title">
     <h2 id="m-title">상점 요청하기</h2>
     <div class="mrow"><label for="m-date">날짜</label><input id="m-date" type="date"></div>
-    <div class="mrow"><label for="m-who">학번 이름</label><input id="m-who" type="text" maxlength="40"></div>
+    <div class="mrow"><label for="m-who">학번 이름</label><input id="m-who" type="text" maxlength="40" placeholder="예: 2340 김민주"></div>
     <label for="m-why" class="q">사유</label>
     <textarea id="m-why" maxlength="500" placeholder="예: 모둠 활동에서 친구에게 단어 뜻을 설명해 주었어요"></textarea>
     <div class="acts"><button class="btn ghost" id="m-close">닫기</button><button class="btn" id="m-send">요청 보내기</button></div>
@@ -543,7 +543,7 @@ function drawMerits(list){ const el=document.getElementById('m-list'); if(!list|
   el.innerHTML='<div class="q" style="margin-top:6px">내가 보낸 요청</div>'+list.map(m=>'<div class="mitem"><span class="st'+(m.done?' ok':'')+'">'+(m.done?'반영됨':'확인 중')+'</span>'+esc(m.date)+' '+esc(m.why)+(m.memo?'<div style="color:var(--muted)">선생님: '+esc(m.memo)+'</div>':'')+'</div>').join(''); }
 document.getElementById('merit-open').onclick=async()=>{
   document.getElementById('m-date').value=todayISO();
-  document.getElementById('m-who').value=String(me.cls).split('-').pop()+'반 '+me.no+'번 '+me.name;
+  document.getElementById('m-who').value='2'+String(me.cls).split('-').pop()+String(me.no).padStart(2,'0')+' '+me.name;  // 학번 이름(예: 2340 김민주)
   document.getElementById('m-why').value=''; mdim.hidden=false; drawMerits(null);
   try{ drawMerits(await call('getMyMerits',me.cls,me.no,me.name)); }catch(e){} };
 document.getElementById('m-close').onclick=()=>{ mdim.hidden=true; };
