@@ -578,13 +578,15 @@ function blkChart(n){
 function openBlk(n){
   const r=blkOf(n);
   if(!r){ toast(myBlk.length?'블루킷 '+n+'회차 기록이 아직 없어요':'아직 블루킷 기록이 없어요. 블루킷 닉네임을 학번+이름으로 해 주세요'); return; }
-  const first=myBlk[0], prev=myBlk.filter(x=>x.n<n).pop();
-  document.getElementById('b-title').textContent='블루킷 '+n+'회차 ('+r.unit+' 어휘, '+r.date+')';
+  // 진단 회차(단원 시작 전, 방식이 다름)는 비교에서 뺀다
+  const isD=x=>/진단/.test(x.unit||''); const cmp=myBlk.filter(x=>!isD(x));
+  const first=isD(r)?null:cmp[0], prev=isD(r)?null:cmp.filter(x=>x.n<n).pop();
+  document.getElementById('b-title').textContent='블루킷 '+n+'회차 ('+(isD(r)?r.unit.replace(' 진단','')+' 어휘 진단':r.unit+' 어휘')+', '+r.date+')';
   const card=(v,unit,l,cv,pv)=>'<div class="bcard"><div class="v">'+v+unit+'</div><div class="l">'+l+'</div><div class="d">'+(cv!==''&&cv!=null?'반 평균 '+cv+unit:'')+'</div>'+(pv!=null?'<div class="d">지난번보다 '+dl(v-pv,unit==='%'?'%p':unit)+'</div>':'')+'</div>';
   let tip='';
   if(prev){ const da=r.acc-prev.acc, dn=r.ans-prev.ans;
     tip = da>=0&&dn>=0 ? '지난번보다 더 많이 풀면서 더 정확해졌어요.' : da>=0 ? '푼 문항은 줄었지만 더 정확해졌어요. 다음엔 조금 더 빠르게 도전해 봐요.' : dn>=0 ? '더 많이 풀었어요. 아래 다시 볼 문항으로 정확도를 올려 봐요.' : '이번엔 조금 주춤했어요. 다시 볼 문항부터 확인해 봐요.'; }
-  else tip='첫 기록이에요. 다음 회차와 비교해 성장을 확인해 봐요.';
+  else tip=isD(r)?'단원을 시작하기 전에 한 진단이에요. 게임 방식이 달라서 다른 회차와 비교하지 않아요.':'비교의 출발점이에요. 다음 회차와 비교해 성장을 확인해 봐요.';
   if(first && n>first.n) tip+=' 처음('+first.n+'회차)보다 정답률 '+dl(r.acc-first.acc,'%p')+', 푼 문항 '+dl(r.ans-first.ans,'개')+'.';
   document.getElementById('b-body').innerHTML='<div class="bcards">'+card(r.acc,'%','정답률',r.cAcc,prev?prev.acc:null)+card(r.ans,'개','푼 문항',r.cAns,prev?prev.ans:null)+card(r.cor,'개','맞은 개수','',prev?prev.cor:null)+'</div>'+
     '<div class="bnote">'+tip+'</div>'+blkChart(n)+
