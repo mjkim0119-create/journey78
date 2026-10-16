@@ -47,6 +47,7 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
 .wrap{max-width:900px;margin:0 auto;padding:12px 12px 40px}
 .top{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:var(--paper);border-radius:14px;padding:10px 14px;margin-bottom:10px}
 .top .me{font-family:var(--f-d);font-size:20px}
+#merit-open{border-color:var(--gold);color:var(--gold);font-weight:700}
 .top .msg{flex:1 1 220px;font-size:15px;color:var(--muted)}
 .top .msg b{color:var(--here)}
 .card{background:var(--paper);border-radius:14px;overflow:hidden}
@@ -121,6 +122,7 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
   <div class="top">
     <span class="me" id="me"></span>
     <span class="msg" id="msg">불러오는 중이에요</span>
+    <button class="btn ghost" id="merit-open">상점 요청</button>
     <button class="btn ghost" id="change">나 바꾸기</button>
   </div>
   <div class="card"><style>
@@ -386,7 +388,6 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
 <g id="trav" style="display:none"><path d="M 0 0 l -16 -30 a 19 19 0 1 1 32 0 z" fill="var(--here)" stroke="var(--paper)" stroke-width="3"/><circle cx="0" cy="-40" r="7" fill="var(--paper)"/><text x="0" y="-62" class="t-trav">우리 반</text></g>
 </svg></div>
   <p class="hint">오늘 역을 누르고 질문에 답하면 도장이 찍혀요. 지난 역도 다시 눌러 답을 고칠 수 있어요. 아직 도착하지 않은 역은 흐리게 보여요.</p>
-  <div class="merit-bar"><button class="btn ghost" id="merit-open">상점 요청하기</button></div>
 </div>
 
 <div id="bdim" class="dim" hidden>
