@@ -571,7 +571,7 @@ async function sendPart(b){
   const tas=b.dataset.one!=null?[sec.querySelector('textarea[data-i="'+b.dataset.one+'"]')]:[...sec.querySelectorAll('textarea')];
   const answers=tas.map(t=>({i:+t.dataset.i, q:q.prompts[+t.dataset.i].q, a:t.value.trim(), key:!!q.prompts[+t.dataset.i].key}));
   if(answers.some(a=>!a.a)){ toast('이 부분의 모든 칸에 답을 써 주세요'); return; }
-  if(answers.some(a=>/_{2,}/.test(a.a))){ toast('빈칸을 모두 채워 주세요'); const eb=[...sec.querySelectorAll('input.blank')].find(x=>!x.value.trim()&&!x.closest('.fb').hidden); if(eb){ eb.focus(); return; } const t=tas.find(t=>/_{2,}/.test(t.value)); if(t){ t.focus(); const k=t.value.search(/_{2,}/); t.setSelectionRange(k,k+t.value.slice(k).match(/^_+/)[0].length); } return; }
+  if(answers.some(a=>/_{2,}/.test(a.a))){ const eb=[...sec.querySelectorAll('input.blank')].find(x=>!x.value.trim()&&!x.closest('.fb').hidden); if(!confirm('빈칸이 있어요. 그래도 제출할까요?')){ if(eb) eb.focus(); return; } }
   if(PV){ toast('미리보기에서는 제출되지 않아요'); return; }
   const label=b.textContent; b.disabled=true; b.textContent='보내는 중';
   const payload={cls:me.cls,no:me.no,name:me.name,st:curSt,stName:q.name,answers,dev:devId()};
