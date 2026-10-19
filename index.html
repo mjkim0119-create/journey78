@@ -40,7 +40,7 @@ function call(fn,...args){ return fetch(API_URL,{method:'POST',body:JSON.stringi
 </script>
 <style>
 /* 학생 화면은 어두운 화면 전용(눈 보호). 색 이름은 common과 같고 값만 어둡게 */
-:root{--paper:#1b2130;--ink:#e6e9f0;--muted:#a3acbb;--faint:#6f788a;--g7:#1c2844;--g8:#33261a;--gt:#33202f;--c7:#86a6ff;--c8:#f0a560;--ct:#e985c5;--gold:#e3bb4c;--road:#3a4356;--stamp:#ff6274;--here:#52d39a;--bg:#10141c;--line:#323a4b;color-scheme:dark}
+:root{--ans:#ffd36b;--paper:#1b2130;--ink:#e6e9f0;--muted:#a3acbb;--faint:#6f788a;--g7:#1c2844;--g8:#33261a;--gt:#33202f;--c7:#86a6ff;--c8:#f0a560;--ct:#e985c5;--gold:#e3bb4c;--road:#3a4356;--stamp:#ff6274;--here:#52d39a;--bg:#10141c;--line:#323a4b;color-scheme:dark}
 html,body{background:var(--bg);color:var(--ink)}
 input,select,textarea{background:#141925;color:var(--ink);border-color:var(--line)}
 
@@ -107,6 +107,13 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
 .bnote{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:15px;line-height:1.6}
 .bchart{width:100%;height:auto;display:block}
 .bwrong li{font-size:14px;margin:3px 0;color:var(--ink)}
+.fb{font-size:16px;line-height:2.1;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:var(--ink)}
+.fb input.blank{font:inherit;font-weight:700;color:var(--ans);background:transparent;border:0;border-bottom:2px solid var(--ans);border-radius:0;padding:0 4px;margin:0 3px;min-width:5ch;width:6ch;outline:none}
+.fb input.blank:focus{background:rgba(255,211,77,.08)}
+.fmode{display:flex;gap:6px;justify-content:flex-end;font-size:13px}
+.fmode button{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:3px 10px;font-family:inherit;cursor:pointer}
+.fmode button.on{border-color:var(--ans);color:var(--ans)}
+textarea[data-i]{color:var(--ans)}
 .fill{flex:none;white-space:nowrap;border:1px solid var(--here);color:var(--here);background:transparent;border-radius:999px;padding:5px 12px;font-size:14px;cursor:pointer;font-family:inherit}
 </style></head>
 <body>
@@ -530,7 +537,7 @@ function openSheet(st){
   if(q.recall){ const items=q.recall.map(r=>{ const rq=QUESTIONS[r], rm=mine[r]||{}; const a=stampIdx(rq).map(i=>rm[i]).filter(Boolean).join('\n'); return '<div><b>'+esc(rq.name)+'</b><div class="a">'+(a?esc(a):'<span style="color:var(--muted)">아직 쓰지 않았어요</span>')+'</div></div>'; }).join('');
     rc.innerHTML='<div class="recall"><div style="color:var(--muted)">지난 역에서 내가 쓴 답</div>'+items+'</div>'; }
   const parts=q.parts||[{key:'_',name:'',stamp:true}];
-  const box=(p,i)=>'<label style="display:grid;gap:6px"><span class="q'+(p.key?' key':'')+'">'+esc(p.q)+'<span class="lang '+p.lang+'">'+LANG[p.lang]+'</span></span>'+(p.frame?'<span class="frame"><span>'+esc(p.frame)+'</span><button type="button" class="fill" data-i="'+i+'">복사</button></span>':'')+'<textarea data-i="'+i+'" maxlength="1000">'+esc(m[i]||'')+'</textarea></label>';
+  const box=(p,i)=>'<label style="display:grid;gap:6px"><span class="q'+(p.key?' key':'')+'">'+esc(p.q)+'<span class="lang '+p.lang+'">'+LANG[p.lang]+'</span></span>'+(p.frame?'<div class="fb" data-i="'+i+'"></div><div class="fmode"><button type="button" class="fm on" data-i="'+i+'" data-m="frame">빈칸에 쓰기</button><button type="button" class="fm" data-i="'+i+'" data-m="free">자유롭게 쓰기</button></div>':'')+'<textarea data-i="'+i+'" maxlength="1000">'+esc(m[i]||'')+'</textarea></label>';
   document.getElementById('s-qs').innerHTML=parts.map(pt=>{
     const idx=q.prompts.map((p,i)=>i).filter(i=>(q.prompts[i].part||'_')===pt.key);
     const done=idx.every(i=>(m[i]||'').trim());
@@ -539,10 +546,23 @@ function openSheet(st){
       '<div class="acts"><button class="btn'+(pt.stamp?'':' ghost')+' send" data-part="'+pt.key+'">'+(pt.stamp?'제출하고 도장 받기':(done?'고쳐서 다시 보내기':'보내기'))+'</button></div></section>';
   }).join('');
   dim.querySelectorAll('.send').forEach(b=>b.onclick=()=>sendPart(b));
-  // 틀 넣기: 문장 틀을 답 칸에 넣고 첫 빈칸(___)을 골라 둔다. 학생은 빈칸만 바꿔 쓰면 된다
-  dim.querySelectorAll('.fill').forEach(b=>b.onclick=e=>{ e.preventDefault(); const i=+b.dataset.i, ta=dim.querySelector('textarea[data-i="'+i+'"]'); const fr=q.prompts[i].frame;
-    ta.value = ta.value.trim() ? ta.value.replace(/\s*$/,'')+'\n'+fr : fr; ta.focus(); const k=ta.value.indexOf('___'); if(k>=0) ta.setSelectionRange(k,k+3); });
-  dim.hidden=false; const first=[...dim.querySelectorAll('textarea')].find(t=>!t.value.trim()); setTimeout(()=>{ if(first) first.focus(); },50);
+  // 빈칸에 쓰기: 문장 틀의 ___ 자리에 입력칸을 두고, 학생이 쓴 말로 답 칸을 채운다. 밑줄을 지울 필요가 없다
+  const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  dim.querySelectorAll('.fb').forEach(fb=>{ const i=+fb.dataset.i, fr=q.prompts[i].frame, ta=dim.querySelector('textarea[data-i="'+i+'"]');
+    const bits=fr.split(/_{2,}/), n=bits.length-1;
+    const prev=(ta.value||'').trim(); let vals=Array(n).fill(''), ok=!prev;
+    if(prev){ const mm=prev.match(new RegExp('^'+bits.map(reEsc).join('([\\s\\S]*?)')+'$')); if(mm){ vals=mm.slice(1).map(v=>v.trim()); ok=true; } }
+    fb.innerHTML=bits.map((s,k)=>esc(s)+(k<n?'<input class="blank" data-k="'+k+'" autocomplete="off" value="'+esc(vals[k])+'">':'')).join('');
+    const ins=[...fb.querySelectorAll('input.blank')];
+    const grow=x=>{ x.style.width=Math.max(6,[...x.value].reduce((w,c)=>w+(c.charCodeAt(0)>255?2:1),0)+2)+'ch'; };
+    const sync=()=>{ ta.value=bits.map((s,k)=>s+(k<n?(ins[k].value.trim()||'___'):'')).join('').trim(); };
+    ins.forEach((x,k)=>{ grow(x); x.oninput=()=>{ grow(x); sync(); }; x.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); (ins[k+1]||x).focus(); } }; });
+    const setMode=md=>{ fb.hidden=md!=='frame'; ta.hidden=md==='frame'; dim.querySelectorAll('.fm[data-i="'+i+'"]').forEach(b=>b.classList.toggle('on',b.dataset.m===md));
+      if(md==='frame'){ sync(); } else { if(/^\s*$/.test(ta.value.replace(/_{2,}/g,'')) ) ta.value=''; ta.focus(); } };
+    dim.querySelectorAll('.fm[data-i="'+i+'"]').forEach(b=>b.onclick=e=>{ e.preventDefault(); setMode(b.dataset.m); });
+    setMode(ok?'frame':'free'); if(ok && prev==='' ) ta.value='';
+  });
+  dim.hidden=false; const first=[...dim.querySelectorAll('input.blank')].find(x=>!x.value.trim()&&!x.closest('.fb').hidden)||[...dim.querySelectorAll('textarea')].find(t=>!t.hidden&&!t.value.trim()); setTimeout(()=>{ if(first) first.focus(); },50);
 }
 document.getElementById('s-close').onclick=()=>{ dim.hidden=true; };
 dim.addEventListener('click',e=>{ if(e.target===dim) dim.hidden=true; });
@@ -551,7 +571,7 @@ async function sendPart(b){
   const tas=b.dataset.one!=null?[sec.querySelector('textarea[data-i="'+b.dataset.one+'"]')]:[...sec.querySelectorAll('textarea')];
   const answers=tas.map(t=>({i:+t.dataset.i, q:q.prompts[+t.dataset.i].q, a:t.value.trim(), key:!!q.prompts[+t.dataset.i].key}));
   if(answers.some(a=>!a.a)){ toast('이 부분의 모든 칸에 답을 써 주세요'); return; }
-  if(answers.some(a=>/_{2,}/.test(a.a))){ toast('빈칸(___)을 모두 채워 주세요'); const t=tas.find(t=>/_{2,}/.test(t.value)); if(t){ t.focus(); const k=t.value.search(/_{2,}/); t.setSelectionRange(k,k+t.value.slice(k).match(/^_+/)[0].length); } return; }
+  if(answers.some(a=>/_{2,}/.test(a.a))){ toast('빈칸을 모두 채워 주세요'); const eb=[...sec.querySelectorAll('input.blank')].find(x=>!x.value.trim()&&!x.closest('.fb').hidden); if(eb){ eb.focus(); return; } const t=tas.find(t=>/_{2,}/.test(t.value)); if(t){ t.focus(); const k=t.value.search(/_{2,}/); t.setSelectionRange(k,k+t.value.slice(k).match(/^_+/)[0].length); } return; }
   if(PV){ toast('미리보기에서는 제출되지 않아요'); return; }
   const label=b.textContent; b.disabled=true; b.textContent='보내는 중';
   const payload={cls:me.cls,no:me.no,name:me.name,st:curSt,stName:q.name,answers,dev:devId()};
