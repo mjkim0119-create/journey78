@@ -70,6 +70,9 @@ input,select,textarea{background:#141925;color:var(--ink);border-color:var(--lin
 .form,.blk{cursor:pointer}
 .form.on rect{fill:var(--c7)}.form.on text{fill:var(--paper)!important}
 .blk.on circle{fill:var(--c8)}.blk.on text{fill:var(--paper)!important}
+.blk rect{fill:var(--paper);stroke:var(--ink);stroke-width:1.6}.blk.on rect{fill:var(--c8);stroke:var(--c8)}.blk text{text-anchor:middle;font-size:15px;font-weight:700}
+.vcnt{color:var(--here);font-weight:700;font-size:12px;white-space:nowrap}
+.btab{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}.btab th,.btab td{border-bottom:1px solid var(--line);padding:4px 3px;text-align:center}.btab th{color:var(--muted);font-weight:400}
 /* 처음 화면 */
 .gate{max-width:420px;margin:60px auto;background:var(--paper);border-radius:18px;padding:26px;display:grid;gap:12px}
 .gate h1{font-size:30px}
@@ -623,58 +626,55 @@ function vocabNo(unit,q){
   return best[2];
 }
 
-let myBlk=[];
-function blkOf(n){ return myBlk.find(r=>r.n===n); }
-// 단원별 회차: 7과, 8과 안에서 1, 2, 3...(게임을 더 하면 칸이 늘어난다)
+let myBlk=[], blkMemo={};
+// 블루킷은 단원별 칸 두 개(7과, 8과). 칸을 누르면 그 단원의 누적 기록을 본다
 const BLK_UNITS=['7과','8과'];
 function blkUnit(r){ return BLK_UNITS.find(u=>String(r.unit||'').startsWith(u))||BLK_UNITS[0]; }
-function blkLocal(r){ return myBlk.filter(x=>blkUnit(x)===blkUnit(r)).sort((a,b)=>a.n-b.n).indexOf(r)+1; }
+function blkOfUnit(u){ return myBlk.filter(r=>blkUnit(r)===u).sort((a,b)=>a.n-b.n); }
+function blkLocal(r){ return blkOfUnit(blkUnit(r)).indexOf(r)+1; }
 function drawBlkRow(){
-  const row=document.getElementById('blkrow'); if(!row) return; const NS='http://www.w3.org/2000/svg';
-  const per=BLK_UNITS.map(u=>myBlk.filter(r=>blkUnit(r)===u).sort((a,b)=>a.n-b.n));
-  const ks=per.map(l=>Math.max(4,l.length)), K=ks[0]+ks[1], LAB=38, X0=642, X1=992;
-  const gap=Math.min(30,(X1-X0-LAB*2)/K), rad=Math.min(11,gap*0.4); let x=X0, h='';
-  BLK_UNITS.forEach((u,ui)=>{ h+='<text x="'+(x+LAB/2-4)+'" y="1398" class="t-small" text-anchor="middle">'+u+'</text>'; x+=LAB;
-    for(let i=0;i<ks[ui];i++){ const r=per[ui][i]; const cx=x+gap*i+gap/2;
-      h+='<g class="blk'+(r?' on':'')+'"'+(r?' data-n="'+r.n+'"':'')+'><circle cx="'+cx+'" cy="1392" r="'+rad+'"/><text x="'+cx+'" y="1397"'+(rad<10?' style="font-size:'+Math.round(rad*1.1)+'px"':'')+'>'+(i+1)+'</text></g>'; }
-    x+=gap*ks[ui]; });
+  const row=document.getElementById('blkrow'); if(!row) return; let h='';
+  BLK_UNITS.forEach((u,i)=>{ const L=blkOfUnit(u), x=652+i*170;
+    h+='<g class="blk'+(L.length?' on':'')+'" data-u="'+u+'"><rect x="'+x+'" y="1374" width="156" height="34" rx="17"/><text x="'+(x+78)+'" y="1397">'+u+(L.length?' '+L.length+'회':' 아직')+'</text></g>'; });
   row.innerHTML=h;
-  row.querySelectorAll('.blk').forEach(g=>g.addEventListener('click',()=>{ if(g.dataset.n) openBlk(+g.dataset.n); else toast(myBlk.length?'이 회차 기록은 아직 없어요':'아직 블루킷 기록이 없어요. 블루킷 닉네임을 학번+이름으로 해 주세요'); }));
+  row.querySelectorAll('.blk').forEach(g=>g.addEventListener('click',()=>openBlkUnit(g.dataset.u)));
 }
 const bdim=document.getElementById('bdim');
 document.getElementById('b-close').onclick=()=>{ bdim.hidden=true; };
 bdim.addEventListener('click',e=>{ if(e.target===bdim) bdim.hidden=true; });
-function dl(v,unit){ if(v==null||isNaN(v)) return ''; const r=Math.round(v*10)/10; return r>0?'<span class="up">+'+r+unit+'</span>':(r<0?'<span class="dn">'+r+unit+'</span>':'<span>그대로</span>'); }
-function blkChart(n){
-  const W=640,H=246,L=40,R=16,T=18,B=50; const xs=myBlk.map(r=>r.n); const N=Math.max(...xs,2);
-  const X=i=>L+(N<=1?0:(i-1)*(W-L-R)/(N-1)); const Y=v=>T+(100-v)*(H-T-B)/100*1.6-((100-v)>62?0:0);
+function blkChart(L){
+  const W=640,H=246,Lf=58,R=40,T=18,B=50, N=Math.max(L.length,2);
+  const X=i=>Lf+(i)*(W-Lf-R)/(N-1);
   const y=v=>Math.max(T,Math.min(H-B, T+(100-Math.max(40,v))*(H-T-B)/60));
   let g='';
-  [40,60,80,100].forEach(v=>{ g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="var(--muted)">'+v+'%</text>'; });
-  // 아래 글자: 단원-회차(7-3)와 게임 길이(분)
-  myBlk.forEach(r=>{ const c=r.n===n?'var(--ink)':'var(--muted)', w=r.n===n?' font-weight="700"':''; g+='<text x="'+X(r.n)+'" y="'+(H-28)+'" text-anchor="middle" font-size="12" fill="'+c+'"'+w+'>'+blkUnit(r).replace('과','')+'-'+blkLocal(r)+'</text>'+(r.min?'<text x="'+X(r.n)+'" y="'+(H-10)+'" text-anchor="middle" font-size="13" fill="'+c+'"'+w+'>'+r.min+'분</text>':''); });
-  const path=(k,c,dash)=>{ const pts=myBlk.filter(r=>r[k]>0).map(r=>X(r.n)+','+y(r[k])); return pts.length?'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="3" '+(dash?'stroke-dasharray="6 5"':'')+'/>':''; };
+  [40,60,80,100].forEach(v=>{ g+='<line x1="'+Lf+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/><text x="'+(Lf-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="12" fill="var(--muted)">'+v+'%</text>'; });
+  // 아래 글자: 회차와 게임 길이(분)
+  L.forEach((r,i)=>{ g+='<text x="'+X(i)+'" y="'+(H-28)+'" text-anchor="middle" font-size="12" fill="var(--muted)">'+(i+1)+'회 '+esc(String(r.date).replace(/^'/,''))+'</text>'+(r.min?'<text x="'+X(i)+'" y="'+(H-10)+'" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ink)">'+r.min+'분</text>':''); });
+  const path=(k,c,dash)=>{ const pts=L.map((r,i)=>r[k]>0?X(i)+','+y(r[k]):null).filter(Boolean); return pts.length?'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+c+'" stroke-width="3" '+(dash?'stroke-dasharray="6 5"':'')+'/>':''; };
   g+=path('cAcc','var(--muted)',true)+path('acc','var(--here)',false);
-  myBlk.forEach(r=>{ g+='<circle cx="'+X(r.n)+'" cy="'+y(r.acc)+'" r="'+(r.n===n?7:5)+'" fill="var(--here)"/>'; if(r.n===n) g+='<text x="'+X(r.n)+'" y="'+(y(r.acc)-12)+'" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">'+r.acc+'%</text>'; });
-  return '<svg class="bchart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="회차별 정답률">'+g+'</svg><div style="font-size:13px;color:var(--muted);text-align:center">초록 실선 = 나의 정답률, 회색 점선 = 우리 반 평균</div>';
+  L.forEach((r,i)=>{ g+='<circle cx="'+X(i)+'" cy="'+y(r.acc)+'" r="6" fill="var(--here)"/><text x="'+X(i)+'" y="'+(y(r.acc)-11)+'" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">'+r.acc+'%</text>'; });
+  return '<svg class="bchart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="회차별 정답률">'+g+'</svg><div style="font-size:13px;color:var(--muted);text-align:center">초록 실선 = 나의 정답률, 회색 점선 = 우리 반 평균, 아래 굵은 숫자 = 게임 길이</div>';
 }
-function openBlk(n){
-  const r=blkOf(n);
-  if(!r){ toast(myBlk.length?'블루킷 '+n+'회차 기록이 아직 없어요':'아직 블루킷 기록이 없어요. 블루킷 닉네임을 학번+이름으로 해 주세요'); return; }
-  // 진단 회차(단원 시작 전, 방식이 다름)는 비교에서 뺀다
-  const isD=x=>/진단/.test(x.unit||''); const cmp=myBlk.filter(x=>!isD(x));
-  const first=isD(r)?null:cmp[0], prev=isD(r)?null:cmp.filter(x=>x.n<n).pop();
-  document.getElementById('b-title').textContent=(r.avg?'우리 반 평균, ':'')+'블루킷 '+blkUnit(r)+' '+blkLocal(r)+'회차 ('+(isD(r)?'어휘 진단':'어휘')+', '+r.date+')';
-  const card=(v,unit,l,cv,pv)=>'<div class="bcard"><div class="v">'+v+unit+'</div><div class="l">'+l+'</div><div class="d">'+(cv!==''&&cv!=null?'반 평균 '+cv+unit:'')+'</div>'+(pv!=null?'<div class="d">지난번보다 '+dl(v-pv,unit==='%'?'%p':unit)+'</div>':'')+'</div>';
-  let tip='';
-  if(prev){ const da=r.acc-prev.acc, dn=r.ans-prev.ans;
-    tip = da>=0&&dn>=0 ? '지난번보다 더 많이 풀면서 더 정확해졌어요.' : da>=0 ? '푼 문항은 줄었지만 더 정확해졌어요. 다음엔 조금 더 빠르게 도전해 봐요.' : dn>=0 ? '더 많이 풀었어요. 아래 다시 볼 문항으로 정확도를 올려 봐요.' : '이번엔 조금 주춤했어요. 다시 볼 문항부터 확인해 봐요.'; }
-  else tip=isD(r)?'단원을 시작하기 전에 한 진단이에요. 게임 방식이 달라서 다른 회차와 비교하지 않아요.':'비교의 출발점이에요. 다음 회차와 비교해 성장을 확인해 봐요.';
-  if(first && n>first.n) tip+=' 처음('+blkLocal(first)+'회차)보다 정답률 '+dl(r.acc-first.acc,'%p')+', 푼 문항 '+dl(r.ans-first.ans,'개')+'.';
-  if(prev && r.min && prev.min && r.min!==prev.min) tip+=' 지난번은 '+prev.min+'분, 이번은 '+r.min+'분 게임이라 푼 문항 수는 시간도 함께 보고 비교해요.';
-  document.getElementById('b-body').innerHTML=(r.min?'<div class="bmin"><b>'+r.min+'분</b> 게임</div>':'')+(r.avg?'<div class="bnote">시험 계정이라 3반 평균으로 보여 줘요.</div>':'')+'<div class="bcards">'+card(r.acc,'%','정답률',r.cAcc,prev?prev.acc:null)+card(r.ans,'개','푼 문항',r.cAns,prev?prev.ans:null)+card(r.cor,'개','맞은 개수','',prev?prev.cor:null)+'</div>'+
-    '<div class="bnote">'+tip+'</div>'+blkChart(n)+
-    (r.wrong.length?'<div class="q" style="margin-top:4px">다시 볼 문항 ('+r.wrong.length+') <span style="font-weight:400;font-size:13px;color:var(--muted)">어휘 학습지 번호를 찾아 다시 봐요</span></div><ol class="bwrong">'+r.wrong.map(w=>{ const v=vocabNo(blkUnit(r),w); return '<li>'+(v?'<span class="vtag">어휘 '+v+'번</span>':'')+esc(w)+'</li>'; }).join('')+'</ol>':'<div class="bnote">이번 회차에 틀린 문항이 없어요!</div>');
+function openBlkUnit(u){
+  const L=blkOfUnit(u);
+  if(!L.length){ toast(myBlk.length?u+' 블루킷 기록은 아직 없어요':'아직 블루킷 기록이 없어요. 블루킷 닉네임을 학번+이름으로 해 주세요'); return; }
+  const avg=L[0].avg;
+  document.getElementById('b-title').textContent=(avg?'우리 반 평균, ':'')+'블루킷 '+u+' 어휘 ('+L.length+'회)';
+  // 1. 다시 볼 문항: 이 단원 모든 회차에서 틀린 문항을 모아, 여러 번 틀린 문항과 최근 문항을 위로
+  const W={}; L.forEach((r,i)=>(r.wrong||[]).forEach(w=>{ const x=W[w]=W[w]||{w,c:0,last:0}; x.c++; x.last=i; }));
+  const WL=Object.values(W).sort((a,b)=>b.c-a.c||b.last-a.last);
+  let h='<div class="q" style="margin-top:0">다시 볼 문항 ('+WL.length+') <span style="font-weight:400;font-size:13px;color:var(--muted)">어휘 학습지 번호를 찾아 다시 봐요. 여러 번 틀린 문항이 위에 있어요.</span></div>';
+  h+=WL.length?'<ol class="bwrong">'+WL.map(x=>{ const v=vocabNo(u,x.w); return '<li>'+(v?'<span class="vtag">어휘 '+v+'번</span>':'')+esc(x.w)+(x.c>1?' <span class="vcnt">'+x.c+'번 틀림</span>':'')+'</li>'; }).join('')+'</ol>':'<div class="bnote">틀린 문항이 없어요!</div>';
+  // 2. 그래프와 회차별 기록
+  h+='<div class="q" style="margin-top:10px">회차별 기록</div>'+blkChart(L);
+  h+='<table class="btab"><tr><th>회차</th><th>날짜</th><th>길이</th><th>정답률</th><th>푼 문항</th><th>반 평균</th></tr>'+L.map((r,i)=>'<tr><td>'+(i+1)+'회'+(/진단/.test(r.unit||'')?' (진단)':'')+'</td><td>'+esc(String(r.date).replace(/^'/,''))+'</td><td>'+(r.min?r.min+'분':'')+'</td><td><b>'+r.acc+'%</b></td><td>'+r.ans+'개</td><td>'+(r.cAcc||'')+'%</td></tr>').join('')+'</table>';
+  // 3. 성찰 메모
+  const ro=!!(typeof PV!=='undefined'&&PV);
+  h+='<div class="q" style="margin-top:10px">성찰 메모</div><div class="bnote" style="margin-bottom:6px">다시 볼 문항과 그래프를 보고 써요. 다음 게임에서 무엇을 다르게 해 볼까요?</div>'+
+     '<textarea id="b-memo" rows="3" style="width:100%;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)" placeholder="예: 7번, 12번처럼 영영풀이 문제를 많이 틀렸다. 다음엔 어휘 학습지의 영영풀이를 먼저 읽고 게임을 하겠다."'+(ro?' readonly':'')+'>'+esc(blkMemo[u]||'')+'</textarea><div id="b-memo-st" style="font-size:12px;color:var(--muted);text-align:right;min-height:16px"></div>';
+  document.getElementById('b-body').innerHTML=h;
+  const ta=document.getElementById('b-memo'), st=document.getElementById('b-memo-st'); let tm=null;
+  if(!ro) ta.addEventListener('input',()=>{ clearTimeout(tm); st.textContent='쓰는 중'; tm=setTimeout(async()=>{ const v=ta.value; try{ await call('saveBlkMemo',me.cls,me.no,me.name,u,v); blkMemo[u]=v; st.textContent='저장했어요'; }catch(e){ st.textContent='저장하지 못했어요. 잠시 뒤 다시 써 주세요'; } },900); });
   bdim.hidden=false;
 }
 
@@ -687,15 +687,15 @@ async function start(){
   render();
   // 첫 화면은 한 번에 받는다(도장 답 + 블루킷). 시험 계정은 블루킷 대신 우리 반 평균
   const loadBlk=()=>TESTER?call('getClassBlkAvg',me.cls):call('getMyBlooket',me.cls,me.no,me.name);
-  try{ const v=await call('getBoot',me.cls,me.no,me.name); mine=v.mine||{}; myBlk=v.blk||[]; window._blkVer=v.ver; if(TESTER) myBlk=await loadBlk()||[]; render(); }
+  try{ const v=await call('getBoot',me.cls,me.no,me.name); mine=v.mine||{}; myBlk=v.blk||[]; blkMemo=v.memos||{}; window._blkVer=v.ver; if(TESTER) myBlk=await loadBlk()||[]; render(); }
   catch(e){ document.getElementById('msg').textContent='기록을 불러오지 못했어요. 새로고침해 주세요'; }
   // 수업 중 블루킷을 반영하면 30초 안에 새 회차가 들어온다. 평소엔 바뀌었는지만 가볍게 묻고, 바뀌었을 때만 기록을 받는다
   if(!window._blkPoll) window._blkPoll=setInterval(async()=>{ if(document.hidden||!me) return;
     try{ const ver=await call('blkVer'); if(ver===window._blkVer) return; window._blkVer=ver;
       const b=await loadBlk()||[]; const had=myBlk.length; myBlk=b; render();
-      if(b.length>had){ const nr=b[b.length-1]; const g=document.querySelector('#blkrow .blk[data-n="'+nr.n+'"]');
+      if(b.length>had){ const nr=b[b.length-1]; const g=document.querySelector('#blkrow .blk[data-u="'+blkUnit(nr)+'"]');
         if(g){ g.classList.add('call'); setTimeout(()=>g.classList.remove('call'),8000); }
-        toast('새 블루킷 기록이 왔어요! '+blkUnit(nr)+' '+blkLocal(nr)+'번 칸을 눌러 보세요'); } }catch(e){} },30000);
+        toast('새 블루킷 기록이 왔어요! '+blkUnit(nr)+' 칸을 눌러 보세요'); } }catch(e){} },30000);
   // QR이나 링크에 ?st=s71 처럼 역이 붙어 있으면 지도에서 그 도장 칸을 깜빡여 누르게 한다
   if(PARAMS.st && QUESTIONS[PARAMS.st] && !openedFromLink){ openedFromLink=true; const g=document.querySelector('.st[data-id="'+mapId(PARAMS.st)+'"]');
     if(isOpen(me.cls,PARAMS.st)){ if(g && !answered(PARAMS.st)){ g.classList.add('call'); g.addEventListener('click',()=>g.classList.remove('call'),{once:true}); } toast(QUESTIONS[PARAMS.st].name+' 도장 칸을 눌러 보세요'); }
@@ -708,7 +708,7 @@ async function startPreview(){
   const bar=document.createElement('div'); bar.style.cssText='background:#e3bb4c;color:#1b2130;font-weight:700;text-align:center;padding:8px;border-radius:10px;margin-bottom:10px';
   bar.textContent='선생님 미리보기 (학생 화면과 같고, 제출과 상점 요청은 되지 않아요)'; document.getElementById('main').prepend(bar);
   document.getElementById('change').hidden=true;
-  try{ const v=await call('teacherView',PV.key,PV.cls,PV.no); me.name=v.name||'(이름 없음)'; mine=v.mine||{}; myBlk=v.blk||[]; }
+  try{ const v=await call('teacherView',PV.key,PV.cls,PV.no); me.name=v.name||'(이름 없음)'; mine=v.mine||{}; myBlk=v.blk||[]; blkMemo=v.memos||{}; }
   catch(e){ toast('미리보기를 열지 못했어요: '+(e.message||e)); }
   document.getElementById('me').textContent=me.cls+'반 '+me.no+'번 '+me.name;
   const ff=document.querySelectorAll('.t-field'); if(ff.length>=2){ ff[0].textContent='2학년 '+String(me.cls).split('-').pop()+'반 '+me.no+'번'; ff[1].textContent='이름 '+me.name; }
