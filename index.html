@@ -29,7 +29,8 @@ const ORDER=['s71','s72','s73','s74','s75','s76','tbx','meme','s81','s82','s83',
 function md(s){const [m,d]=s.split('/').map(Number);return m*100+d}
 function todayMD(){const t=new Date();return (t.getMonth()+1)*100+t.getDate()}
 function firstDate(cls,st){const r=(DATES[cls]||{})[st];return r&&r.length?r[0][0]:null}
-function isOpen(cls,st){const f=firstDate(cls,st);return !!f&&md(f)<=todayMD()}
+// 역 열기(11/4 MJ): 그 역 날짜가 됐거나, 바로 앞 역(보너스 역 빼고) 수업 날짜가 지났으면 연다. 수업이 앞당겨져도 다음 날 바로 열린다
+function isOpen(cls,st){const f=firstDate(cls,st);if(!f)return false;if(md(f)<=todayMD())return true;const seq=ORDER.filter(s=>s!=='tbx'&&s!=='meme');const i=seq.indexOf(st);for(let j=i-1;j>=0;j--){const p=firstDate(cls,seq[j]);if(p)return md(p)<todayMD();}return false}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
 function call(fn,...args){return new Promise((ok,no)=>google.script.run.withSuccessHandler(ok).withFailureHandler(e=>no(e)) [fn](...args))}
