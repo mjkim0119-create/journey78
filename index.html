@@ -618,7 +618,7 @@ async function sendPart(b){
 
 // ---------- 쓰기 연습: 사진 올리고 피드백 받기 ----------
 let wfAll={};
-const WF_HEADS=['잘한 점','고칠 점','더 확인해 볼 것','한마디'];
+const WF_HEADS=['잘한 점','고칠 점','더 확인해 볼 것','개요와 순서','한마디'];
 function fbHtml(t){ return String(t||'').split('\n').map(l=>{ const x=l.trim(); if(!x) return ''; return WF_HEADS.includes(x)?'<div class="wfh">'+esc(x)+'</div>':'<div>'+esc(x)+'</div>'; }).join(''); }
 function shrink(file){ return new Promise((ok,no)=>{ const u=URL.createObjectURL(file), im=new Image();
   im.onload=()=>{ const M=1600, k=Math.min(1,M/Math.max(im.width,im.height)); const c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k);
@@ -631,7 +631,7 @@ function openWrite(st){
   document.getElementById('s-recall').innerHTML='';
   const last=hist[0];
   document.getElementById('s-qs').innerHTML=
-   '<div class="wfbox"><b>이렇게 해요</b><div>1. 연습지 D(내 글 쓰기) 칸을 밝은 곳에서 반듯하게 찍어요. 이름 칸은 찍지 않아도 돼요.</div><div>2. 글자 읽기를 누르면 AI가 내 글을 옮겨 적어요.</div><div>3. 잘못 읽은 곳만 고쳐요. 내가 틀리게 쓴 철자는 그대로 두어야 정확한 피드백을 받아요.</div><div>4. 피드백을 받으면 도장이 찍혀요. 고쳐 쓴 뒤 다시 받아도 돼요. 점수는 선생님이 매겨요.</div></div>'+
+   '<div class="wfbox"><b>이렇게 해요</b><div>1. 연습지 C(개요)와 D(내 글 쓰기)가 함께 나오게 밝은 곳에서 반듯하게 찍어요. 이름 칸은 찍지 않아도 돼요.</div><div>2. 글자 읽기를 누르면 AI가 내 글을 옮겨 적어요.</div><div>3. 잘못 읽은 곳만 고쳐요. 내가 틀리게 쓴 철자는 그대로 두어야 정확한 피드백을 받아요.</div><div>4. 피드백을 받으면 도장이 찍혀요. 고쳐 쓴 뒤 다시 받아도 돼요. 점수는 선생님이 매겨요.</div></div>'+
    (last?'<div class="wfbox"><b>지난 피드백 ('+esc(last.t)+')</b>'+fbHtml(last.fb)+'</div>':'')+
    '<label class="btn ghost" style="text-align:center">사진 찍기 또는 고르기 (1~2장)<input id="wf-file" type="file" accept="image/*" multiple hidden></label>'+
    '<div id="wf-thumbs" style="display:flex;gap:8px;flex-wrap:wrap"></div>'+
